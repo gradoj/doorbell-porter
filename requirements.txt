@@ -1,0 +1,80 @@
+# Doorbell Porter System Requirements
+# Organized by functionality with specific version pins for reproducibility
+
+#------------------------------------------------------------------------------
+# Core Dependencies
+#------------------------------------------------------------------------------
+
+# API and Communication
+websockets==12.0        # OpenAI realtime API websocket communication
+aiohttp==3.9.1         # Async HTTP server for webhooks
+requests==2.31.0       # HTTP client for weather and camera APIs
+flux_led==0.28.0       # LED light control
+
+# AI and Vision
+openai==1.6.0          # OpenAI API client for vision and chat
+python-dotenv==1.0.0   # Environment variable management
+
+# Time and Localization
+pytz==2023.3.post1     # Timezone handling for weather and events
+
+#------------------------------------------------------------------------------
+# Type Hints and Code Quality
+#------------------------------------------------------------------------------
+
+typing-extensions==4.8.0  # Enhanced type hints support
+mypy==1.7.1             # Optional: Static type checking
+
+#------------------------------------------------------------------------------
+# Audio Processing
+#------------------------------------------------------------------------------
+
+# Built-in Modules (no installation needed)
+# - audioop: Audio processing (part of Python standard library)
+
+#------------------------------------------------------------------------------
+# System Requirements
+#------------------------------------------------------------------------------
+
+# FFmpeg (required for audio/video processing)
+# Install via system package manager:
+#
+# Windows:
+#   choco install ffmpeg
+#   or download from https://ffmpeg.org/download.html
+#
+# macOS:
+#   brew install ffmpeg
+#
+# Linux:
+#   apt-get install ffmpeg    # Debian/Ubuntu
+#   yum install ffmpeg        # CentOS/RHEL
+#   pacman -S ffmpeg         # Arch Linux
+
+#------------------------------------------------------------------------------
+# Development Dependencies (Optional)
+#------------------------------------------------------------------------------
+
+# Testing
+pytest==7.4.3          # Testing framework
+pytest-asyncio==0.23.2 # Async test support
+pytest-cov==4.1.0      # Test coverage
+
+# Code Quality
+black==23.11.0         # Code formatting
+isort==5.12.0          # Import sorting
+flake8==6.1.0          # Code linting
+pylint==3.0.2          # Static code analysis
+
+# Documentation
+sphinx==7.2.6          # Documentation generator
+sphinx-rtd-theme==1.3.0  # Documentation theme
+
+#------------------------------------------------------------------------------
+# Notes
+#------------------------------------------------------------------------------
+
+# Version pins use == for reproducible builds
+# Update versions periodically for security fixes
+# Test thoroughly when updating major versions
+# Some packages may require system-level dependencies
