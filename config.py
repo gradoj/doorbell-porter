@@ -61,8 +61,8 @@ VISION_MODEL = 'gpt-4o-mini'  # Vision analysis model
 #------------------------------------------------------------------------------
 
 # Audio processing settings
-CHUNK: int = 2048    # Buffer size in bytes (1024 to 8192)
-                     # Larger values reduce CPU but increase latency
+CHUNK: int = 1024    # Buffer size in bytes (1024 to 8192)
+                     # Smaller values reduce latency but increase CPU usage
 
 CHANNELS: int = 1    # Number of audio channels
                      # 1: Mono (required for G.711)
@@ -87,7 +87,7 @@ AUDIO_PROCESSING = {
         # Enable two-step resampling for better quality (24kHz -> 16kHz -> 8kHz)
         # True: Better quality but more CPU usage
         # False: Direct 24kHz -> 8kHz conversion
-        'ENABLE_SMOOTH_RESAMPLING': True,  # Enable for better handling of sibilants
+        'ENABLE_SMOOTH_RESAMPLING': False,  # Disabled for lower latency
         
         # Remove DC offset from audio signal
         # True: Prevents audio drift and improves quality
@@ -96,11 +96,11 @@ AUDIO_PROCESSING = {
         
         # Minimum audio level to pass through (0 to 32767)
         # Higher values reduce background noise
-        'NOISE_GATE_THRESHOLD': 200,  # Increased to reduce noise during pauses
+        'NOISE_GATE_THRESHOLD': 100,  # Lower threshold for smoother transitions
         
         # Volume adjustment ratio (0.0 to 1.0)
         # Controls overall volume level
-        'VOLUME_TARGET_RATIO': 0.05,  # Lower volume level (range: 0.1-1.0)
+        'VOLUME_TARGET_RATIO': 0.15,  # Increased for better audibility
         
         # Maximum allowed signal level (0 to 32767)
         # Prevents audio clipping

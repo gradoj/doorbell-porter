@@ -52,9 +52,9 @@ class DoorbellAudioHandler:
         self.RATE = 8000  # G.711 rate
         self.CHUNK = 4096
         
-        # Audio queues with larger buffers to handle load spikes
+        # Audio queues with optimized buffer sizes for lower latency
         self.incoming_queue = Queue(maxsize=50)  # From doorbell to OpenAI (~1s at 24kHz)
-        self.outgoing_queue = Queue(maxsize=25)  # From OpenAI to doorbell (~500ms buffer)
+        self.outgoing_queue = Queue(maxsize=10)  # From OpenAI to doorbell (~200ms buffer)
         
         # Import config here to avoid circular imports
         from . import config
@@ -416,11 +416,21 @@ class DoorbellAudioHandler:
                                 self.rtsp.backchannel_socket.sendto(rtp_packet, (self.rtsp.hostname, self.rtsp.backchannel_server_port))
                                 if packet_count % 500 == 0:  # Log every 500 packets (~10 seconds)
                                     logger.info(f"Backchannel active - sent {packet_count} packets")
-                                time.sleep(0.02)  # 20ms delay between packets
+                                time.sleep(0.01)  # 10ms delay between packets
                             except Exception as e:
                                 logger.error(f"Failed to send RTP packet: {e}")
-                                self.rtsp.backchannel_socket = None  # Force reconnection
-                                break
+                                # Attempt to recover from packet drop
+                                try:
+                                    if not self.rtsp.send_keepalive():
+                                        logger.error("Failed to recover connection")
+                                        self.rtsp.backchannel_socket = None  # Force reconnection
+                                        break
+                                    logger.info("Recovered from packet drop")
+                                    continue
+                                except Exception as recovery_error:
+                                    logger.error(f"Recovery failed: {recovery_error}")
+                                    self.rtsp.backchannel_socket = None  # Force reconnection
+                                    break
                             packet_count += 1
                             
                         else:
