@@ -291,18 +291,34 @@ class Camera:
 # Module-level interface
 #------------------------------------------------------------------------------
 
-# Create default camera instance
-_default_camera = Camera(
-    rtsp_url=config.DOORBELL_URL,
-    username=config.DOORBELL_USERNAME,
-    password=config.DOORBELL_PASSWORD,
-    channel=config.SNAPSHOT_CHANNEL,
-    use_ffmpeg=config.USE_FFMPEG_SNAPSHOT
-)
+_default_camera = None
+
+def get_camera() -> Optional[Camera]:
+    """
+    Get or create the default camera instance if camera features are enabled.
+    
+    Returns:
+        Camera instance if DOORBELL or VISION features are enabled, None otherwise
+    """
+    global _default_camera
+    
+    if not (config.FEATURES['DOORBELL'] or config.FEATURES['VISION']):
+        return None
+        
+    if _default_camera is None:
+        _default_camera = Camera(
+            rtsp_url=config.DOORBELL_URL,
+            username=config.DOORBELL_USERNAME,
+            password=config.DOORBELL_PASSWORD,
+            channel=config.SNAPSHOT_CHANNEL,
+            use_ffmpeg=config.USE_FFMPEG_SNAPSHOT
+        )
+    
+    return _default_camera
 
 def take_snapshot(resolution: Optional[Union[str, Tuple[int, int]]] = None) -> str:
     """
-    Take snapshot using default camera instance.
+    Take snapshot using default camera instance if available.
     
     This is a convenience function that uses the default camera
     configuration from the config module.
@@ -315,5 +331,12 @@ def take_snapshot(resolution: Optional[Union[str, Tuple[int, int]]] = None) -> s
     
     Returns:
         Path to saved snapshot or error message
+        
+    Raises:
+        RuntimeError: If camera features are not enabled
     """
-    return _default_camera.take_snapshot(resolution)
+    camera = get_camera()
+    if camera is None:
+        raise RuntimeError("Camera features are not enabled. Enable DOORBELL or VISION in config.py")
+    
+    return camera.take_snapshot(resolution)

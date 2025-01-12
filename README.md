@@ -33,34 +33,55 @@ This is an AI learning project exploring the capabilities of OpenAI's realtime A
 
 ## Features
 
-- Two-way audio communication through doorbell intercom
-- Automatic snapshot capture when visitors arrive
-- Real-time weather information for known landmarks and coordinates
-- Professional AI porter/assistant responses
+Core Features (Required):
+- Two-way audio communication through Reolink doorbell
 - Webhook server for doorbell events
-- Detailed weather data including temperature, humidity, wind, and more
-- Automatic light control for better visibility in dark conditions
+- Professional AI porter/assistant responses
+
+Optional Features (Configurable):
+- Weather Information:
+  * Real-time weather data via OpenWeatherMap
+  * Temperature, humidity, wind conditions
+  * Extended data: pressure, visibility, cloud cover
+- Vision Features:
+  * Automatic snapshot capture on events
+  * OpenAI Vision analysis of visitors
+  * Configurable resolution (default: 640x480)
+- Light Control:
+  * Magic Home LED control via flux_led
+  * Automatic activation in low light
+  * Basic on/off functionality
+
+## Known Issues
+
+1. Audio Processing:
+   - FFmpeg backchannel path is currently non-functional (use audioop path instead)
+   - Occasional audio artifacts during rapid speech transitions
+
+Workarounds:
+   - Use `USE_FFMPEG_BACKCHANNEL = False` in config.py (default setting)
 
 ## AI Tools
 
-The system provides several AI-powered tools that can be used by the OpenAI model:
+The system provides several AI-powered tools:
 
-### Voice Communication
+### Voice Communication (Required)
 - `connect_voice`: Establishes two-way voice communication
 - `disconnect_voice`: Ends voice communication session
 - Handles natural pauses and turn-taking in conversation
+- Optimized for low-latency with 200ms buffer
 
-### Vision Analysis
+### Vision Analysis (Optional)
 - `take_snapshot`: Captures images from doorbell camera
 - `analyze_snapshot`: Uses vision AI to analyze visitors and scenes
 - Provides detailed descriptions of what the camera sees
 
-### Weather Information
+### Weather Information (Optional)
 - `get_weather`: Retrieves detailed weather data
 - Provides current conditions, temperature, humidity, wind
 - Includes extended data like pressure, visibility, cloud cover
 
-### Light Control
+### Light Control (Optional)
 - `turn_light_on`: Activates LED light when needed
 - `turn_light_off`: Deactivates LED light
 - Automatically manages lighting for better visibility
@@ -70,29 +91,30 @@ The system provides several AI-powered tools that can be used by the OpenAI mode
 ### Hardware
 - Reolink doorbell camera with RTSP support
 - Network connectivity for webhook server
-- LED light compatible with Magic Home protocol
+- Magic Home compatible LED light (optional)
 
 ### Software
 - Python 3.8+
 - FFmpeg for audio/video processing
 
 ### API Keys
-- OpenAI API key (for AI assistant)
-- OpenWeather API key (for weather data)
+- OpenAI API key (required)
+- OpenWeather API key (optional)
 
 ## Project Structure
 
 ```
 doorbell_porter_weather/
 ├── main.py              # Main application entry point
-├── config.py            # Configuration settings
-├── audio_handler.py     # Audio streaming functionality
+├── config.py            # Configuration and feature toggles
+├── audio_handler.py     # Doorbell audio streaming
 ├── camera.py           # Camera and snapshot management
 ├── doorbell_handler.py  # Doorbell and webhook management
 ├── image_analyzer.py    # Vision AI analysis
 ├── weather_service.py   # Weather API integration
-├── light_service.py    # LED light control
+├── light_service.py    # Magic Home LED control
 ├── tools.py            # OpenAI tool implementations
+├── rtsp_session.py     # RTSP session management
 ├── requirements.txt    # Package dependencies
 ├── .env.example        # Environment variable template
 └── README.md          # Project documentation
@@ -160,32 +182,37 @@ sudo yum install ffmpeg      # CentOS/RHEL
 
 2. Edit `.env` with your credentials:
    ```
-   # API Keys
+   # Required Settings
    OPENAI_API_KEY=your_openai_key_here
-   OPENWEATHER_API_KEY=your_weather_key_here
-
-   # Doorbell Camera Configuration
    DOORBELL_URL=rtsp://your_camera_ip:554/path
    DOORBELL_USERNAME=your_username
    DOORBELL_PASSWORD=your_password
-
-   # Webhook Server Configuration
    WEBHOOK_HOST=your_webhook_host
    WEBHOOK_PORT=your_webhook_port
 
-   # Light Configuration
-   LED_IP=your_led_ip_here
+   # Optional Settings (based on enabled features)
+   OPENWEATHER_API_KEY=your_weather_key_here  # For weather feature
+   LED_IP=your_led_ip_here                    # For light control
    ```
 
 ## Configuration
+
+### Feature Configuration
+Enable/disable optional features in `config.py`:
+```python
+FEATURES = {
+    'WEATHER': True,        # OpenWeatherMap integration
+    'LIGHT_CONTROL': True,  # Magic Home LED control
+    'VISION': True,         # Camera vision features
+}
+```
 
 ### Basic Configuration
 Update settings in `config.py`:
 - Audio settings (channels, rate, chunk size)
 - Camera settings (resolution, snapshot options)
-- Weather settings (default location, landmarks)
+- Weather settings (default location)
 - Logging configuration
-- Light control settings
 
 ### Advanced Configuration
 - FFmpeg options in `camera.py`
@@ -218,19 +245,6 @@ pip install -r requirements.txt
 pytest
 ```
 
-### Code Style
-- Follow PEP 8 guidelines
-- Use type hints
-- Document functions and classes
-- Run linters before committing:
-  ```bash
-  black .
-  isort .
-  flake8
-  mypy .
-  pylint .
-  ```
-
 ## Future Improvements
 
 ### Local Model Integration
@@ -241,10 +255,11 @@ pytest
 - Adding memories
 
 ### Audio Processing
-- Implement better noise reduction
-- Add echo cancellation
-- Improve audio compression algorithms
-- Add support for different audio codecs
+- Implement alternative to FFmpeg backchannel
+- Add advanced noise reduction
+- Improve echo cancellation
+- Optimize audio compression
+- Implement automatic gain control
 
 ### Camera Integration
 - Add support for other camera brands
@@ -257,12 +272,6 @@ pytest
 - Implement color changing capabilities
 - Add support for multiple light zones
 - Integrate with other smart light protocols
-
-### Architecture
-- Add Redis for event caching
-- Implement proper database for event logging
-- Add metrics collection and monitoring
-- Improve error recovery mechanisms
 
 ### User Interface
 - Add web interface for configuration

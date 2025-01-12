@@ -41,7 +41,8 @@ from .config import (
     DOORBELL_USERNAME,
     DOORBELL_PASSWORD,
     WEBHOOK_HOST,
-    WEBHOOK_PORT
+    WEBHOOK_PORT,
+    FEATURES
 )
 
 #------------------------------------------------------------------------------
@@ -188,10 +189,11 @@ class DoorbellEventHandler:
             # Create event prompt
             prompt = EVENT_PROMPT_TEMPLATE.format(message=event_message)
             
-            # Take snapshot
-            snapshot_result = await self._take_event_snapshot()
-            if snapshot_result:
-                prompt += f"\n\nA snapshot has been automatically taken: {snapshot_result}"
+            # Take snapshot if VISION feature is enabled
+            if FEATURES['VISION']:
+                snapshot_result = await self._take_event_snapshot()
+                if snapshot_result:
+                    prompt += f"\n\nA snapshot has been automatically taken: {snapshot_result}"
             
             # Process event
             await self._process_event(prompt)

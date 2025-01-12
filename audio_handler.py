@@ -9,12 +9,11 @@ This module manages audio processing and streaming:
 - Audio format conversion
 
 The audio processing pipeline includes:
-- Two-step sample rate conversion (24kHz -> 16kHz -> 8kHz)
+- Sample rate conversion
 - DC offset removal
-- Simple volume control
-- Gentle noise gate
+- Volume control
+- Noise gate
 - Peak limiting
-- μ-law encoding for RTP transmission
 """
 
 import os
@@ -24,7 +23,7 @@ import threading
 import logging
 import time
 from queue import Queue, Full, Empty
-from typing import Optional, Dict, List, Tuple, Any, Union
+from typing import Optional, Dict, List, Tuple, Any
 
 from .rtsp_session import RTSPSession
 

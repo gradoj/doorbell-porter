@@ -47,7 +47,6 @@ def get_required_env(key: str) -> str:
 # - API keys must be set in .env file
 # - Model versions should be updated as new ones are released
 OPENAI_API_KEY = get_required_env('OPENAI_API_KEY')
-WEATHER_API_KEY = get_required_env('OPENWEATHER_API_KEY')
 VOICE: str = 'alloy'  # Available voices: alloy, echo, fable, onyx, nova, shimmer
 
 # Model Configuration
@@ -55,6 +54,60 @@ VOICE: str = 'alloy'  # Available voices: alloy, echo, fable, onyx, nova, shimme
 # - VISION_MODEL: Used for image analysis
 MODEL = 'gpt-4o-realtime-preview-2024-12-17'  # Real-time conversation model
 VISION_MODEL = 'gpt-4o-mini'  # Vision analysis model
+
+#------------------------------------------------------------------------------
+# Feature Configuration
+#------------------------------------------------------------------------------
+
+# Enable/disable optional features
+# Set to True to enable a feature, False to disable
+FEATURES = {
+    'WEATHER': True,        # OpenWeatherMap API for real-time weather data
+                           # Requires OPENWEATHER_API_KEY in .env
+                           # Provides temperature, conditions, humidity, wind
+                           # Extended info: pressure, visibility, cloud cover
+                           
+    'LIGHT_CONTROL': True,  # Magic Home LED control via flux_led library
+                           # Requires LED_IP in .env (e.g. 10.0.0.148)
+                           # Supports: on/off control
+                           # Auto-on in low light conditions
+                           # Auto-off after inactivity
+                           
+    'VISION': True,         # Reolink camera vision features
+                           # Uses doorbell's built-in camera
+                           # Captures snapshots on events
+                           # Analyzes images using OpenAI Vision
+                           # Resolution: 640x480 (configurable)
+}
+
+#------------------------------------------------------------------------------
+# Optional Feature Configuration
+#------------------------------------------------------------------------------
+
+# Optional environment variables based on enabled features
+def _get_optional_env(key: str, required_feature: str) -> Optional[str]:
+    """Get environment variable if its feature is enabled, otherwise return None."""
+    if FEATURES[required_feature]:
+        value = os.getenv(key)
+        if value is None:
+            raise ValueError(f"Missing required environment variable for {required_feature}: {key}")
+        return value
+    return None
+
+# Get optional API keys and configuration based on enabled features
+WEATHER_API_KEY = _get_optional_env('OPENWEATHER_API_KEY', 'WEATHER')
+LED_IP = _get_optional_env('LED_IP', 'LIGHT_CONTROL')
+
+#------------------------------------------------------------------------------
+# Doorbell Configuration
+#------------------------------------------------------------------------------
+
+# Required doorbell settings
+DOORBELL_URL = get_required_env('DOORBELL_URL')
+DOORBELL_USERNAME = get_required_env('DOORBELL_USERNAME')
+DOORBELL_PASSWORD = get_required_env('DOORBELL_PASSWORD')
+WEBHOOK_HOST = get_required_env('WEBHOOK_HOST')
+WEBHOOK_PORT = int(get_required_env('WEBHOOK_PORT'))
 
 #------------------------------------------------------------------------------
 # Audio Configuration
@@ -68,9 +121,9 @@ CHANNELS: int = 1    # Number of audio channels
                      # 1: Mono (required for G.711)
                      # 2: Stereo (not supported)
 
-RATE: int = 8000     # Sample rate in Hz
-                     # 8000: G.711 μ-law standard
-                     # Other rates require resampling
+RATE: int = 24000    # Sample rate in Hz
+                     # 24000: OpenAI's preferred rate
+                     # 8000: G.711 μ-law (for doorbell)
 
 USE_FFMPEG_BACKCHANNEL: bool = False  # Audio processing method
                                      # True: Use FFmpeg (better quality, more CPU)
@@ -87,37 +140,26 @@ AUDIO_PROCESSING = {
         # Enable two-step resampling for better quality (24kHz -> 16kHz -> 8kHz)
         # True: Better quality but more CPU usage
         # False: Direct 24kHz -> 8kHz conversion
-        'ENABLE_SMOOTH_RESAMPLING': False,  # Disabled for lower latency
+        'ENABLE_SMOOTH_RESAMPLING': True,  # Disabled for lower latency
         
         # Remove DC offset from audio signal
         # True: Prevents audio drift and improves quality
         # False: Raw audio without DC correction
-        'DC_OFFSET_REMOVAL': True,
+        'DC_OFFSET_REMOVAL': False,
         
         # Minimum audio level to pass through (0 to 32767)
         # Higher values reduce background noise
-        'NOISE_GATE_THRESHOLD': 100,  # Lower threshold for smoother transitions
+        'NOISE_GATE_THRESHOLD': 1000,  # Lower threshold for smoother transitions
         
         # Volume adjustment ratio (0.0 to 1.0)
         # Controls overall volume level
-        'VOLUME_TARGET_RATIO': 0.15,  # Increased for better audibility
+        'VOLUME_TARGET_RATIO': 0.1,  # Increased for better audibility
         
         # Maximum allowed signal level (0 to 32767)
         # Prevents audio clipping
-        'PEAK_LIMITER_THRESHOLD': 28000  # High threshold to preserve dynamics
+        'PEAK_LIMITER_THRESHOLD': 2000  # High threshold to preserve dynamics
     }
 }
-
-#------------------------------------------------------------------------------
-# Camera Configuration
-#------------------------------------------------------------------------------
-
-#------------------------------------------------------------------------------
-# Light Configuration
-#------------------------------------------------------------------------------
-
-# Light settings
-LED_IP: str = get_required_env('LED_IP')  # LED light IP address
 
 #------------------------------------------------------------------------------
 # Camera Configuration
@@ -127,13 +169,6 @@ LED_IP: str = get_required_env('LED_IP')  # LED light IP address
 USE_FFMPEG_SNAPSHOT: bool = False      # Set to False to use direct API method
 SNAPSHOT_RESOLUTION: Tuple[int, int] = (640, 480)  # Width x Height
 SNAPSHOT_CHANNEL: int = 0              # Camera channel (usually 0)
-
-# Doorbell connection settings
-DOORBELL_URL: str = get_required_env('DOORBELL_URL')
-DOORBELL_USERNAME: str = get_required_env('DOORBELL_USERNAME')
-DOORBELL_PASSWORD: str = get_required_env('DOORBELL_PASSWORD')
-WEBHOOK_HOST: str = get_required_env('WEBHOOK_HOST')
-WEBHOOK_PORT: int = int(get_required_env('WEBHOOK_PORT'))
 
 #------------------------------------------------------------------------------
 # Location Configuration
@@ -151,13 +186,13 @@ DEFAULT_LOCATION: Dict[str, Any] = {
 #------------------------------------------------------------------------------
 
 # System message for the AI
-SYSTEM_MESSAGE: str = """You are a helpful AI assistant speaking through a doorbell intercom system. 
+SYSTEM_MESSAGE: str = """You are a helpful AI assistant speaking through a doorbell intercom system.
 Keep your responses concise and clear, as if you're speaking through an intercom.
 Be friendly but professional, and always remember you're acting as a doorbell porter/assistant.
 
-You have access to these tools:
+You have access to these tools based on enabled features:
 
-1. Voice Communication Tools:
+1. Voice Communication Tools (Always Available):
    - The connect_voice tool establishes two-way voice communication
    - The disconnect_voice tool ends the voice session
    - IMPORTANT: For voice communication:
@@ -178,28 +213,26 @@ You have access to these tools:
         - If you have more to say
         - Without saying a proper goodbye first
 
-2. Camera Tool:
-   - The take_snapshot tool will be automatically triggered when someone presses the doorbell
-   - Each snapshot will be automatically analyzed using advanced vision AI
-   - You will receive both the snapshot path and a detailed analysis
-   - You can also request additional analysis of any snapshot using analyze_snapshot
-   - Use the visual information to better assist and describe visitors
-
-2. Weather Tool:
-   - You can provide weather information for the area when asked
+2. Optional Tools (Based on Configuration):
+   
+   Weather Information (if enabled):
    - Use the get_weather tool with latitude/longitude coordinates
-   - You can provide basic or detailed weather information
-   - Basic info includes: current conditions, temperature, humidity, and wind
-   - Extended info (when asked) includes: pressure, visibility, cloud cover, sunrise/sunset times
-
-3. Light Control:
-   - You can control the LED light when needed
+   - Provides current conditions, temperature, humidity, and wind
+   - Extended info includes pressure, visibility, cloud cover, sunrise/sunset times
+   
+   Camera Features (if enabled):
+   - The take_snapshot tool captures images from the camera
+   - Each snapshot is analyzed using vision AI
+   - You receive both the snapshot path and a detailed analysis
+   - You can request additional analysis using analyze_snapshot
+   
+   Light Control (if enabled):
    - Use turn_light_on to turn the light on
    - Use turn_light_off to turn the light off
-   - Consider turning on the light when it's dark and someone is at the door
+   - Consider lighting conditions when managing the light
    - Remember to turn off the light when no longer needed
 
-When someone arrives (presses the doorbell):
+For conversations:
 1. Call connect_voice to establish communication
 2. Greet them warmly and professionally
 3. Let them speak first after your greeting
