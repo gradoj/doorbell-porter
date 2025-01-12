@@ -61,7 +61,7 @@ VISION_MODEL = 'gpt-4o-mini'  # Vision analysis model
 #------------------------------------------------------------------------------
 
 # Audio processing settings
-CHUNK: int = 1024    # Buffer size in bytes (1024 to 8192)
+CHUNK: int = 2048    # Buffer size in bytes (1024 to 8192)
                      # Larger values reduce CPU but increase latency
 
 CHANNELS: int = 1    # Number of audio channels
